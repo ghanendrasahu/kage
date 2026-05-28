@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "paths": {
+      "next-auth/lib/*": ["../../node_modules/next-auth/lib/*"]
+    }
+  },
+  "include": ["src"]
+}
