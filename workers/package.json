@@ -1,0 +1,26 @@
+{
+  "name": "@kage/workers",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules"
+  },
+  "dependencies": {
+    "@kage/ai": "*",
+    "@kage/config": "*",
+    "@kage/db": "*",
+    "@kage/gmail": "*",
+    "@kage/queue": "*",
+    "@kage/research": "*",
+    "@kage/shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.3"
+  }
+}
