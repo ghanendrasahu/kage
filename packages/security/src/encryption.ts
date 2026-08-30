@@ -37,7 +37,7 @@ export function decrypt(ciphertext: string): string {
   const tagHex = parts[1];
   const encryptedHex = parts[2];
 
-  if (!ivHex || !tagHex || !encryptedHex) {
+  if (!ivHex || !tagHex || encryptedHex === undefined) {
     throw new Error("Invalid ciphertext format");
   }
 

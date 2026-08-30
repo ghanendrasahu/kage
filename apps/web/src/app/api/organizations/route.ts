@@ -40,7 +40,7 @@ export const POST = withAuth(async (request, context) => {
     const { name, website } = parsed.data;
     const db = getDb();
 
-    let baseSlug = slugify(name);
+    const baseSlug = slugify(name);
     let slug = baseSlug;
     let counter = 1;
 

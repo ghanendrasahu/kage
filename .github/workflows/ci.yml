@@ -88,3 +88,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          DATABASE_URL: postgresql://kage:kage_password@localhost:5432/kage_test
+          REDIS_URL: redis://localhost:6379
+          AUTH_SECRET: test-auth-secret-min-32-chars-long-here
+          ENCRYPTION_KEY: test-encryption-key-min-32-chars
+          GOOGLE_CLIENT_ID: test-client-id
+          GOOGLE_CLIENT_SECRET: test-client-secret
+          OPENAI_API_KEY: test-openai-key
+          STRIPE_SECRET_KEY: test-stripe-key
+          STRIPE_WEBHOOK_SECRET: test-webhook-secret
