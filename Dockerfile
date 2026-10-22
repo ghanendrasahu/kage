@@ -50,7 +50,6 @@ RUN adduser --system --uid 1001 nextjs
 
 COPY --from=base /app/apps/web/.next/standalone ./
 COPY --from=base /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=base /app/apps/web/public ./apps/web/public
 
 USER nextjs
 
