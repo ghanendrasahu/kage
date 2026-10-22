@@ -41,18 +41,21 @@ export function hasMinRole(userRole: UserRole, requiredRole: UserRole): boolean 
   return userLevel >= requiredLevel;
 }
 
+export type ResourceType = "prospect" | "research" | "outreach" | "campaign";
+
 export function canAccessResource(
   userRole: UserRole,
   resourceOwnerId: string | null,
   userId: string,
-  permission: "all" | "own" | "read"
+  permission: "all" | "own" | "read",
+  resourceType: ResourceType = "prospect"
 ): boolean {
   if (permission === "read") {
-    return hasPermission(userRole, `${getResourceType(permission)}:read` as Permission);
+    return hasPermission(userRole, `${resourceType}:read` as Permission);
   }
 
   if (permission === "all") {
-    return hasPermission(userRole, `${getResourceType(permission)}:all` as Permission);
+    return hasPermission(userRole, `${resourceType}:all` as Permission);
   }
 
   if (permission === "own") {
@@ -60,8 +63,4 @@ export function canAccessResource(
   }
 
   return false;
-}
-
-function getResourceType(_permission: string): string {
-  return "prospect";
 }

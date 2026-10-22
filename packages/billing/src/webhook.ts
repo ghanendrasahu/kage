@@ -67,7 +67,7 @@ export async function handleWebhook(event: Stripe.Event): Promise<void> {
   }
 }
 
-function mapStripeStatus(
+export function mapStripeStatus(
   status: string
 ): "ACTIVE" | "PAST_DUE" | "CANCELLED" | "TRIALING" {
   switch (status) {
@@ -85,7 +85,7 @@ function mapStripeStatus(
   }
 }
 
-function determinePlanName(subscription: Stripe.Subscription): string {
+export function determinePlanName(subscription: Stripe.Subscription): string {
   const items = subscription.items.data;
   if (items.length === 0) return "starter";
 

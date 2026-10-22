@@ -64,6 +64,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Drizzle migration drift check
+        # The schema must be fully described by committed migrations - no
+        # `db:push`. A schema change without a migration fails the build.
+        run: |
+          npx drizzle-kit generate --name=ci-drift-check
+          if ! git diff --exit-code -- packages/db/migrations; then
+            echo "::error::The schema changed without a migration. Run 'npm run db:generate' and commit the result."
+            exit 1
+          fi
       - run: npm test
         env:
           DATABASE_URL: postgresql://kage:kage_password@localhost:5432/kage_test
