@@ -68,7 +68,9 @@ jobs:
         # The schema must be fully described by committed migrations - no
         # `db:push`. A schema change without a migration fails the build.
         run: |
+          cd packages/db
           npx drizzle-kit generate --name=ci-drift-check
+          cd ../..
           if ! git diff --exit-code -- packages/db/migrations; then
             echo "::error::The schema changed without a migration. Run 'npm run db:generate' and commit the result."
             exit 1
