@@ -17,6 +17,23 @@ COPY packages/security/package.json ./packages/security/
 
 RUN npm ci
 
+# Next.js collects page data at build time, which imports route modules that
+# eagerly initialize the database/queue. CI does the same with placeholders
+# (see .github/workflows ci.yml build job). Values here must stay dummies -
+# real configuration is provided at run time through Space secrets.
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build \
+    REDIS_URL=redis://localhost:6379/0 \
+    AUTH_SECRET=build-time-placeholder-secret-32-bytes \
+    ENCRYPTION_KEY=build-time-placeholder-key--32-bytes \
+    GOOGLE_CLIENT_ID=build-placeholder \
+    GOOGLE_CLIENT_SECRET=build-placeholder \
+    OPENAI_API_KEY=build-placeholder \
+    STRIPE_SECRET_KEY=build-placeholder \
+    STRIPE_WEBHOOK_SECRET=build-placeholder \
+    NEXT_PUBLIC_APP_URL=http://localhost:3000 \
+    NEXT_PUBLIC_API_URL=http://localhost:3000 \
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=build-placeholder
+
 COPY apps/web/ ./apps/web/
 COPY packages/ ./packages/
 
