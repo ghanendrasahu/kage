@@ -43,7 +43,13 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+# The web app loads its auth module on every request, and that module
+# requires a database URL to be present. The values below are placeholders:
+# replace them with the real ones in the deployment environment.
+ENV NODE_ENV=production \
+    HOSTNAME=0.0.0.0 \
+    DATABASE_URL=postgresql://kage:kage@localhost:5432/kage \
+    REDIS_URL=redis://localhost:6379
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -52,6 +58,11 @@ COPY --from=base /app/apps/web/.next/standalone ./
 COPY --from=base /app/apps/web/.next/static ./apps/web/.next/static
 
 USER nextjs
+
+# The web app serves its own health route, which does not depend on the API
+# service being reachable.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD wget -q --spider http://127.0.0.1:3000/api/health || exit 1
 
 EXPOSE 3000
 

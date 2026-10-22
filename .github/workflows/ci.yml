@@ -127,3 +127,20 @@ jobs:
             echo "ERROR: the image runs as root"; exit 1
           fi
           echo "image runs as uid $uid"
+
+      - name: Verify the container serves its health route
+        run: |
+          docker run -d --name kage-ci -p 3000:3000 kage-web:ci
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health || true)
+            if [ "$code" = "200" ]; then
+              echo "the health route returns 200"
+              docker rm -f kage-ci
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "ERROR: /api/health never returned 200"
+          docker logs kage-ci || true
+          docker rm -f kage-ci
+          exit 1
