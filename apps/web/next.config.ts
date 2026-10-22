@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Standalone output produces a self-contained tree (.next/standalone) that
+  // docker/Dockerfile.web and the root Space Dockerfile run with node
+  // apps/web/server.js.
+  output: "standalone",
   transpilePackages: ["@kage/shared", "@kage/db", "@kage/config"],
   experimental: {
     serverActions: {
