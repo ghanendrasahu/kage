@@ -9,7 +9,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+  const googleEnabled = process.env["NEXT_PUBLIC_GOOGLE_AUTH_ENABLED"] === "true";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

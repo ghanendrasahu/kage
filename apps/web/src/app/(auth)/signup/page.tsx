@@ -12,7 +12,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [organizationName, setOrganizationName] = useState("");
-  const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+  const googleEnabled = process.env["NEXT_PUBLIC_GOOGLE_AUTH_ENABLED"] === "true";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
