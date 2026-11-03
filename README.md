@@ -29,7 +29,7 @@ An AI-powered sales research and outreach copilot for B2B sales teams. Multi-age
 | Database | PostgreSQL 16, Drizzle ORM |
 | Queue | Redis 7, BullMQ |
 | AI | OpenAI (gpt-4o, gpt-4o-mini), Zod schemas |
-| Auth | NextAuth v5 (Google OAuth + Credentials) |
+| Auth | NextAuth v5 (email/password credentials; optional Google OAuth) |
 | Billing | Stripe |
 | Monorepo | Turborepo, npm workspaces |
 
@@ -149,7 +149,7 @@ An AI-powered sales research and outreach copilot for B2B sales teams. Multi-age
 - PostgreSQL 16+
 - Redis 7+
 - OpenAI API key
-- Google OAuth credentials (Gmail)
+- Optional: Google OAuth credentials (only needed to enable Google sign-in and Gmail sending)
 - Stripe account (billing)
 
 ## Quick Start
