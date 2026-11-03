@@ -39,6 +39,7 @@ declare module "next-auth" {
 }
 
 const nextAuthResult: NextAuthResult = NextAuth({
+  trustHost: true,
   adapter: DrizzleAdapter(getDb()) as any,
   session: { strategy: "jwt" },
   pages: {
