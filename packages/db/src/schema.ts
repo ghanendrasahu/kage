@@ -339,6 +339,23 @@ export const outreachMessages = pgTable("outreach_messages", {
 ]);
 
 // =============================================================================
+// EMAIL TEMPLATES
+// =============================================================================
+export const emailTemplates = pgTable("email_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organization_id: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  channel: outreachChannelEnum("channel").notNull().default(OutreachChannel.EMAIL),
+  subject: varchar("subject", { length: 500 }),
+  body: text("body").notNull(),
+  variables: jsonb("variables").$type<string[]>().default([]).notNull(),
+  is_default: boolean("is_default").notNull().default(false),
+  ...timestamps,
+}, (table) => [
+  index("email_templates_org_idx").on(table.organization_id),
+]);
+
+// =============================================================================
 // FOLLOW-UP SEQUENCES
 // =============================================================================
 export const followUpSequences = pgTable("follow_up_sequences", {
