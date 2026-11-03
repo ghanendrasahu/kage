@@ -2,6 +2,8 @@
 
 An AI-powered sales research and outreach copilot for B2B sales teams. Multi-agent architecture with human-in-the-loop approval, Gmail integration, and multi-tenant SaaS design.
 
+**Live demo:** https://kage-f9sc.onrender.com — sign in with `admin@kage.dev` / `Admin123!` (or create an account). Runs on Neon PostgreSQL + Upstash Redis; free-tier cold start takes ~30–60 s after idle.
+
 ## Features
 
 - **AI Research Pipeline**: Automated company research using public sources (website, news, search)
