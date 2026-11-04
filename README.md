@@ -156,7 +156,7 @@ An AI-powered sales research and outreach copilot for B2B sales teams. Multi-age
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/your-org/kage.git
+git clone https://github.com/ghanendrasahu/kage.git
 cd kage
 npm install
 
