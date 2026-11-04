@@ -5,6 +5,8 @@ export interface AgentConfig {
   promptName: string;
   timeout?: number;
   maxRetries?: number;
+  /** Optional output cap; keeps requests inside free-tier token limits. */
+  maxTokens?: number;
 }
 
 export interface AgentResult<T> {
@@ -42,6 +44,7 @@ export abstract class BaseAgent<TInput, TOutput> {
           userPrompt,
           schema: this.getOutputSchema(),
           temperature: prompt.temperature,
+          maxTokens: this.config.maxTokens,
         });
 
         return {

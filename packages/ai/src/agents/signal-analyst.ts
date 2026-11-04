@@ -23,6 +23,7 @@ export class SignalAnalystAgent extends BaseAgent<SignalAnalystInput, SignalAnal
       promptName: "signal-analyst-v1",
       timeout: 30000,
       maxRetries: 2,
+      maxTokens: 2048,
     });
   }
 
