@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+/**
+ * Accept bare domains from the model (for example `acme.com/news`) and
+ * normalize them to a full URL before validating.
+ */
+const HttpUrlSchema = z
+  .string()
+  .transform((value) => {
+    const trimmed = value.trim();
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  })
+  .pipe(z.string().url());
+
 export const ResearchPlanSchema = z.object({
   searchQueries: z.array(z.string()),
   websitesToCheck: z.array(z.string()),
@@ -14,7 +26,7 @@ export const RawFindingSchema = z.object({
   title: z.string(),
   description: z.string(),
   snippet: z.string().optional(),
-  sourceUrl: z.string().url(),
+  sourceUrl: HttpUrlSchema,
   sourceDate: z.string().optional(),
   confidence: z.number().min(0).max(1),
 });
@@ -36,7 +48,7 @@ export const SignalSchema = z.object({
   ]),
   title: z.string(),
   description: z.string(),
-  sourceUrl: z.string().url(),
+  sourceUrl: HttpUrlSchema,
   sourceDate: z.string().optional(),
   confidence: z.number().min(0).max(1),
 });

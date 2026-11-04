@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import type { z } from "zod";
+import { describeSchema, extractJson } from "./schema-hint";
 
 export interface AIProvider {
   complete(params: {
@@ -79,10 +80,21 @@ export class OpenAIProvider implements AIProvider {
     temperature?: number;
     maxTokens?: number;
   }): Promise<{ data: T; usage: { inputTokens: number; outputTokens: number } }> {
+    const schemaHint = describeSchema(params.schema);
     const response = await this.client.chat.completions.create({
       model: this.resolveModel(params.model),
       messages: [
-        { role: "system", content: params.systemPrompt },
+        {
+          role: "system",
+          content: `${params.systemPrompt}
+
+Respond with ONLY a JSON object that exactly matches this shape:
+${schemaHint}
+
+Rules:
+- Include every required key shown above, even when a value is unknown (use an empty array or empty string).
+- Do not add Markdown fences, commentary, or keys that are not in the shape.`,
+        },
         { role: "user", content: params.userPrompt },
       ],
       temperature: params.temperature ?? 0.7,
@@ -95,7 +107,7 @@ export class OpenAIProvider implements AIProvider {
       throw new Error("No content returned from AI");
     }
 
-    const parsed = JSON.parse(choice.message.content) as unknown;
+    const parsed = JSON.parse(extractJson(choice.message.content)) as unknown;
     const result = params.schema.safeParse(parsed);
 
     if (!result.success) {

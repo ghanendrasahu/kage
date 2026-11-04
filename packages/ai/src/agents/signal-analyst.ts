@@ -28,7 +28,11 @@ export class SignalAnalystAgent extends BaseAgent<SignalAnalystInput, SignalAnal
 
   buildUserPrompt(input: SignalAnalystInput): string {
     const findingsSummary = input.findings
-      .map((f) => `[${f.category}] ${f.title}: ${f.description} (confidence: ${f.confidence})`)
+      .map(
+        (f) =>
+          `[${f.category}] ${f.title}: ${f.description}` +
+          ` (confidence: ${f.confidence}, sourceUrl: ${f.sourceUrl})`
+      )
       .join("\n");
 
     return `Company: ${input.companyName}
@@ -37,7 +41,9 @@ Industry: ${input.industry ?? "Unknown"}
 Research findings:
 ${findingsSummary}
 
-Identify business signals, pain points, opportunities, and personalization angles.`;
+Identify business signals, pain points, opportunities, and personalization angles.
+For every signal, set sourceUrl to one of the sourceUrl values listed above
+(verbatim, including https://). Do not invent URLs.`;
   }
 
   protected getOutputSchema(): z.ZodSchema<SignalAnalystOutput> {
