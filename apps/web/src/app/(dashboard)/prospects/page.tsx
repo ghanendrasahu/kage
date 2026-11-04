@@ -46,7 +46,7 @@ export default function ProspectsPage() {
       if (res.ok) {
         const data = await res.json();
         setProspects(data.prospects ?? []);
-        setTotalPages(data.totalPages ?? 1);
+        setTotalPages(data.pagination?.totalPages ?? 1);
       }
     } catch (error) {
       console.error("Failed to fetch prospects:", error);

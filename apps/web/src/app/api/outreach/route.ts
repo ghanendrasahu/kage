@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { withAuth, handleApiError } from "@/lib/api";
 import { getDb, outreachPackages, outreachMessages, prospects, researchReports } from "@kage/db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import { OutreachChannel, MessageStatus } from "@kage/shared";
 import { runOutreachJob } from "@kage/workers/processors/outreach";
 
@@ -44,8 +44,44 @@ export const GET = withAuth(async (request, context) => {
 
     const total = Number(countResult[0]?.count ?? 0);
 
+    // The dashboard renders each package with its company and messages, so
+    // hydrate both in bulk instead of issuing a query per row.
+    const packageIds = items.map((item) => item.id);
+    const prospectIds = [...new Set(items.map((item) => item.prospect_id))];
+
+    const [messages, prospectRows] = await Promise.all([
+      db
+        .select()
+        .from(outreachMessages)
+        .where(
+          and(
+            eq(outreachMessages.organization_id, context.organizationId),
+            inArray(outreachMessages.package_id, packageIds)
+          )
+        )
+        .orderBy(outreachMessages.channel, outreachMessages.variant),
+      db
+        .select({ id: prospects.id, company_name: prospects.company_name })
+        .from(prospects)
+        .where(inArray(prospects.id, prospectIds)),
+    ]);
+
+    const companyById = new Map(prospectRows.map((row) => [row.id, row.company_name]));
+    const messagesByPackage = new Map<string, typeof messages>();
+    for (const message of messages) {
+      const bucket = messagesByPackage.get(message.package_id) ?? [];
+      bucket.push(message);
+      messagesByPackage.set(message.package_id, bucket);
+    }
+
+    const packages = items.map((item) => ({
+      ...item,
+      company_name: companyById.get(item.prospect_id) ?? "Unknown company",
+      messages: messagesByPackage.get(item.id) ?? [],
+    }));
+
     return NextResponse.json({
-      packages: items,
+      packages,
       pagination: {
         page,
         limit,

@@ -32,7 +32,7 @@ export default function OutreachPage() {
       if (res.ok) {
         const data = await res.json();
         setPackages(data.packages ?? []);
-        setTotalPages(data.totalPages ?? 1);
+        setTotalPages(data.pagination?.totalPages ?? 1);
       }
     } catch (error) {
       console.error("Failed to fetch outreach:", error);

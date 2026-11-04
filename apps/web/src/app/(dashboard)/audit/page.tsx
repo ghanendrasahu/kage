@@ -32,7 +32,7 @@ export default function AuditPage() {
       if (res.ok) {
         const data = await res.json();
         setLogs(data.logs ?? []);
-        setTotalPages(data.totalPages ?? 1);
+        setTotalPages(data.pagination?.totalPages ?? 1);
       }
     } catch (error) {
       console.error("Failed to fetch audit logs:", error);
