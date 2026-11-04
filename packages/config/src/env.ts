@@ -10,7 +10,9 @@ const serverSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().min(1),
 
   OPENAI_API_KEY: z.string().min(1),
+  OPENAI_BASE_URL: z.string().url().optional(),
   OPENAI_ORG_ID: z.string().optional(),
+  AI_MODEL: z.string().optional(),
 
   STRIPE_SECRET_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1),

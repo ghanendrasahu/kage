@@ -1,6 +1,6 @@
 import { Job } from "bullmq";
 import { BaseWorker, type JobData, type JobResult } from "@kage/queue";
-import { getDb, outreachMessages, gmailAccounts } from "@kage/db";
+import { getDb, outreachMessages, gmailAccounts, prospects } from "@kage/db";
 import { eq, and } from "drizzle-orm";
 import { GmailService } from "@kage/gmail";
 import { MessageStatus } from "@kage/shared";
@@ -43,12 +43,23 @@ export class SendEmailWorker extends BaseWorker {
         return { success: false, error: "Message not found" };
       }
 
-      if (existingMessage.status !== MessageStatus.APPROVED) {
-        return { success: false, error: "Message must be approved before sending" };
+      const [prospect] = await db
+        .select()
+        .from(prospects)
+        .where(
+          and(
+            eq(prospects.id, existingMessage.prospect_id),
+            eq(prospects.organization_id, organizationId)
+          )
+        )
+        .limit(1);
+
+      if (!prospect?.email) {
+        return { success: false, error: "No recipient email address" };
       }
 
-      if (!existingMessage.email) {
-        return { success: false, error: "No recipient email address" };
+      if (existingMessage.status !== MessageStatus.APPROVED) {
+        return { success: false, error: "Message must be approved before sending" };
       }
 
       const [gmailAccount] = await db
@@ -85,7 +96,7 @@ export class SendEmailWorker extends BaseWorker {
       const result = await this.gmailService.sendEmail({
         accessTokenEncrypted: gmailAccount.access_token_encrypted,
         refreshTokenEncrypted: gmailAccount.refresh_token_encrypted,
-        to: existingMessage.email,
+        to: prospect.email,
         subject: existingMessage.subject ?? "",
         body: existingMessage.body,
         idempotencyKey,

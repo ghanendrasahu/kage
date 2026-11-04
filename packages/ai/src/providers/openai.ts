@@ -28,7 +28,16 @@ export class OpenAIProvider implements AIProvider {
     if (!apiKey) {
       throw new Error("OPENAI_API_KEY environment variable is required");
     }
-    this.client = new OpenAI({ apiKey });
+    // Point at any OpenAI-compatible endpoint (e.g. Groq) and optionally
+    // override the model requested by individual prompts.
+    this.client = new OpenAI({
+      apiKey,
+      baseURL: process.env["OPENAI_BASE_URL"] || undefined,
+    });
+  }
+
+  private resolveModel(model: string): string {
+    return process.env["AI_MODEL"] || model;
   }
 
   async complete(params: {
@@ -39,7 +48,7 @@ export class OpenAIProvider implements AIProvider {
     maxTokens?: number;
   }): Promise<{ content: string; usage: { inputTokens: number; outputTokens: number } }> {
     const response = await this.client.chat.completions.create({
-      model: params.model,
+      model: this.resolveModel(params.model),
       messages: [
         { role: "system", content: params.systemPrompt },
         { role: "user", content: params.userPrompt },
@@ -71,7 +80,7 @@ export class OpenAIProvider implements AIProvider {
     maxTokens?: number;
   }): Promise<{ data: T; usage: { inputTokens: number; outputTokens: number } }> {
     const response = await this.client.chat.completions.create({
-      model: params.model,
+      model: this.resolveModel(params.model),
       messages: [
         { role: "system", content: params.systemPrompt },
         { role: "user", content: params.userPrompt },

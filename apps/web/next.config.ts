@@ -5,7 +5,16 @@ const nextConfig: NextConfig = {
   // docker/Dockerfile.web and the root Space Dockerfile run with node
   // apps/web/server.js.
   output: "standalone",
-  transpilePackages: ["@kage/shared", "@kage/db", "@kage/config"],
+  transpilePackages: [
+    "@kage/shared",
+    "@kage/db",
+    "@kage/config",
+    "@kage/ai",
+    "@kage/queue",
+    "@kage/research",
+    "@kage/gmail",
+    "@kage/workers",
+  ],
   experimental: {
     serverActions: {
       bodySizeLimit: "2mb",

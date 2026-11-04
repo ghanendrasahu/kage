@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { withAuth, handleApiError } from "@/lib/api";
 import { getDb, outreachPackages, outreachMessages, prospects, researchReports } from "@kage/db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { OutreachChannel, MessageStatus } from "@kage/shared";
+import { runOutreachJob } from "@kage/workers/processors/outreach";
 
 const generateOutreachSchema = z.object({
   prospectId: z.string().uuid(),
@@ -110,6 +111,29 @@ export const POST = withAuth(async (request, context) => {
         status: "PENDING",
       })
       .returning();
+
+    if (outreachPackage) {
+      // No paid worker on the free tier: run after the response is sent.
+      after(async () => {
+        try {
+          const result = await runOutreachJob({
+            organizationId: context.organizationId,
+            userId: context.userId,
+            prospectId: parsed.data.prospectId,
+            researchReportId: parsed.data.researchReportId,
+            packageId: outreachPackage.id,
+            productService: parsed.data.productService,
+            icpDescription: parsed.data.icpDescription,
+            salesContext: parsed.data.salesContext,
+          });
+          if (!result.success) {
+            console.error("Outreach job failed:", result.error);
+          }
+        } catch (error) {
+          console.error("Outreach job failed:", error);
+        }
+      });
+    }
 
     return NextResponse.json({ outreachPackage }, { status: 201 });
   } catch (error) {

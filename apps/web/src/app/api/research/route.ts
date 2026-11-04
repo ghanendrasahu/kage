@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { withAuth, handleApiError } from "@/lib/api";
 import { getDb, researchReports, researchSources, researchFindings, prospects } from "@kage/db";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { runResearchJob } from "@kage/workers/processors/research";
 
 const startResearchSchema = z.object({
   prospectId: z.string().uuid(),
@@ -94,6 +95,27 @@ export const POST = withAuth(async (request, context) => {
         status: "PENDING",
       })
       .returning();
+
+    if (report) {
+      // No paid worker on the free tier: run after the response is sent.
+      after(async () => {
+        try {
+          const result = await runResearchJob({
+            organizationId: context.organizationId,
+            userId: context.userId,
+            prospectId: parsed.data.prospectId,
+            reportId: report.id,
+            companyName: parsed.data.companyName,
+            companyDomain: parsed.data.companyDomain,
+          });
+          if (!result.success) {
+            console.error("Research job failed:", result.error);
+          }
+        } catch (error) {
+          console.error("Research job failed:", error);
+        }
+      });
+    }
 
     return NextResponse.json({ report }, { status: 201 });
   } catch (error) {

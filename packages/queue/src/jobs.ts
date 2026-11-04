@@ -20,6 +20,7 @@ const BaseJobSchema = z.object({
 
 export const ResearchCompanyJobSchema = BaseJobSchema.extend({
   prospectId: z.string().uuid(),
+  reportId: z.string().uuid().optional(),
   companyDomain: z.string(),
   companyName: z.string(),
 });
@@ -27,6 +28,7 @@ export const ResearchCompanyJobSchema = BaseJobSchema.extend({
 export const GenerateOutreachJobSchema = BaseJobSchema.extend({
   prospectId: z.string().uuid(),
   researchReportId: z.string().uuid(),
+  packageId: z.string().uuid().optional(),
   productService: z.string(),
   icpDescription: z.string().optional(),
   salesContext: z.string().optional(),
