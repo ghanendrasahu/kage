@@ -13,6 +13,7 @@ import {
 
 import { formatDate, timeAgo } from "@/lib/utils";
 import { humanizeStatus, statusVariant } from "@/lib/status";
+import { parseResearchSummary, summarizeResearch } from "@/lib/research";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -256,7 +257,7 @@ export default function ResearchPage() {
                       {report.company_name}
                     </p>
                     <p className="text-[11px] text-subtle">
-                      {report.summary ? report.summary.slice(0, 72) : "No summary yet"}
+                      {(summarizeResearch(report.summary) ?? "No summary yet").slice(0, 72)}
                     </p>
                   </TD>
                   <TD className="hidden md:table-cell">
@@ -414,9 +415,7 @@ export default function ResearchPage() {
               <h3 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-subtle">
                 Summary
               </h3>
-              <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-muted">
-                {detail?.summary ?? "No summary was produced for this report."}
-              </p>
+              <ResearchSummaryBody raw={detail?.summary ?? null} />
             </section>
 
             {detail?.findings && detail.findings.length > 0 ? (
@@ -478,6 +477,74 @@ export default function ResearchPage() {
           </div>
         )}
       </Modal>
+    </div>
+  );
+}
+
+const SUMMARY_GROUPS = [
+  { key: "painPoints", label: "Pain points" },
+  { key: "opportunities", label: "Opportunities" },
+  { key: "personalizationAngles", label: "Personalization angles" },
+] as const;
+
+function ResearchSummaryBody({ raw }: { raw: string | null }) {
+  const parsed = React.useMemo(() => parseResearchSummary(raw), [raw]);
+
+  if (!parsed) {
+    return (
+      <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-muted">
+        {raw ?? "No summary was produced for this report."}
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-4">
+      {parsed.signals.length > 0 ? (
+        <div>
+          <h4 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-subtle">
+            Signals
+          </h4>
+          <ul className="mt-1.5 space-y-1.5">
+            {parsed.signals.slice(0, 4).map((signal, index) => (
+              <li
+                key={`${signal.title ?? signal.type ?? "signal"}-${index}`}
+                className="rounded-lg border border-line bg-elevated/40 px-3 py-2"
+              >
+                <p className="text-[12.5px] font-medium text-foreground">
+                  {signal.title ?? signal.type ?? "Signal"}
+                </p>
+                {signal.description ? (
+                  <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted">
+                    {signal.description}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {SUMMARY_GROUPS.map((group) => {
+        const items = parsed[group.key];
+        if (items.length === 0) return null;
+
+        return (
+          <div key={group.key}>
+            <h4 className="text-[10px] font-semibold uppercase tracking-[0.12em] text-subtle">
+              {group.label}
+            </h4>
+            <ul className="mt-1.5 space-y-1 text-[12px] leading-relaxed text-muted">
+              {items.slice(0, 6).map((item, index) => (
+                <li key={`${group.key}-${index}`} className="flex gap-2">
+                  <span className="mt-[7px] size-1 shrink-0 rounded-full bg-line-strong" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
 }

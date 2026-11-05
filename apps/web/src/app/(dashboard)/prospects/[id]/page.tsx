@@ -23,6 +23,7 @@ import {
 
 import { formatDate, initials, timeAgo } from "@/lib/utils";
 import { humanizeStatus, statusVariant } from "@/lib/status";
+import { summarizeResearch } from "@/lib/research";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -490,7 +491,7 @@ export default function ProspectDetailPage({
                         </span>
                       </div>
                       <p className="mt-2 line-clamp-3 text-[12.5px] leading-relaxed text-muted">
-                        {report.summary ?? "The report is still generating."}
+                        {summarizeResearch(report.summary) ?? "The report is still generating."}
                       </p>
                       <Link
                         href="/research"
@@ -649,7 +650,7 @@ export default function ProspectDetailPage({
                 Latest brief
               </p>
               <p className="mt-1.5 line-clamp-4 text-[12px] leading-relaxed text-muted">
-                {latestReport.summary}
+                {summarizeResearch(latestReport.summary)}
               </p>
             </div>
           ) : null}

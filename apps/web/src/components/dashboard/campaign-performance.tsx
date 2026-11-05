@@ -116,7 +116,7 @@ export function CampaignPerformance({
 
   return (
     <Card className="flex h-full flex-col">
-      <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
+      <CardHeader className="flex-col gap-3 space-y-0 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <CardTitle>Campaign performance</CardTitle>
           <p className="mt-0.5 text-xs text-muted">
