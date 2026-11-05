@@ -1,34 +1,48 @@
+import Link from "next/link";
+import { ArrowLeft, Mail } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Field, Input } from "@/components/ui/input";
+
 export default function ForgotPasswordPage() {
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900">Reset your password</h2>
-      <p className="mt-2 text-sm text-gray-600">
-        Enter your email address and we&apos;ll send you a link to reset your password.
+      <h2 className="text-[24px] font-semibold tracking-[-0.02em] text-foreground">
+        Reset your password
+      </h2>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
+        Enter the email on your KAGE account and we&apos;ll send a link to choose a
+        new password.
       </p>
-      <form className="mt-8 space-y-6">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email address
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
-          />
-        </div>
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
-        >
+
+      <form className="mt-6 space-y-4">
+        <Field label="Email address" htmlFor="email">
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-subtle" />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="you@company.com"
+              className="pl-8"
+            />
+          </div>
+        </Field>
+
+        <Button type="submit" variant="primary" size="lg" className="w-full">
           Send reset link
-        </button>
-        <a href="/login" className="block text-center text-sm text-gray-600 hover:underline">
-          Back to sign in
-        </a>
+        </Button>
       </form>
+
+      <Link
+        href="/login"
+        className="mt-6 inline-flex items-center gap-1.5 text-[12px] font-medium text-muted transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="size-3.5" />
+        Back to sign in
+      </Link>
     </div>
   );
 }

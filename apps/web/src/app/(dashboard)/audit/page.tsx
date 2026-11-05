@@ -1,6 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import * as React from "react";
+import { Download, Filter, ScrollText } from "lucide-react";
+
+import { formatDateTime } from "@/lib/utils";
+import { humanizeStatus, statusVariant } from "@/lib/status";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { Select } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Table,
+  TableEmpty,
+  TableLoading,
+  TableWrap,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+} from "@/components/ui/table";
 
 interface AuditLog {
   id: string;
@@ -11,24 +32,46 @@ interface AuditLog {
   created_at: string;
 }
 
+const ACTIONS = [
+  "USER_CREATED",
+  "USER_SIGNED_IN",
+  "PROSPECT_CREATED",
+  "PROSPECT_UPDATED",
+  "PROSPECT_DELETED",
+  "RESEARCH_STARTED",
+  "OUTREACH_GENERATED",
+  "MESSAGE_APPROVED",
+  "MESSAGE_REJECTED",
+  "EMAIL_SENT",
+  "GMAIL_CONNECTED",
+  "GMAIL_DISCONNECTED",
+];
+
+const RESOURCES = [
+  "USER",
+  "PROSPECT",
+  "RESEARCH_REPORT",
+  "OUTREACH_PACKAGE",
+  "EMAIL_MESSAGE",
+  "CAMPAIGN",
+];
+
 export default function AuditPage() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [actionFilter, setActionFilter] = useState("");
-  const [resourceFilter, setResourceFilter] = useState("");
+  const [logs, setLogs] = React.useState<AuditLog[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [page, setPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
+  const [actionFilter, setActionFilter] = React.useState("");
+  const [resourceFilter, setResourceFilter] = React.useState("");
 
-  useEffect(() => {
-    fetchLogs();
-  }, [page, actionFilter, resourceFilter]);
-
-  async function fetchLogs() {
+  const fetchLogs = React.useCallback(async () => {
+    setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: "50" });
       if (actionFilter) params.set("action", actionFilter);
       if (resourceFilter) params.set("resourceType", resourceFilter);
-      const res = await fetch(`/api/audit-logs?${params}`);
+
+      const res = await fetch(`/api/audit-logs?${params}`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setLogs(data.logs ?? []);
@@ -39,138 +82,181 @@ export default function AuditPage() {
     } finally {
       setLoading(false);
     }
+  }, [page, actionFilter, resourceFilter]);
+
+  React.useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  function exportJson() {
+    const blob = new Blob([JSON.stringify(logs, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `kage-audit-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">Audit Log</h1>
+    <div className="space-y-5">
+      <PageHeader
+        title="Audit log"
+        description="An append-only record of who changed what. Useful when a send, approval or deletion needs a paper trail."
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={exportJson}
+            disabled={logs.length === 0}
+          >
+            <Download />
+            Export page
+          </Button>
+        }
+      />
 
-      <div className="mt-4 flex gap-4">
-        <select
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-medium text-subtle">
+          <Filter className="mr-1 inline size-3.5 align-[-2px]" />
+          Filters
+        </span>
+        <Select
           value={actionFilter}
-          onChange={(e) => {
-            setActionFilter(e.target.value);
+          onChange={(event) => {
+            setActionFilter(event.target.value);
             setPage(1);
           }}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          aria-label="Filter by action"
+          className="w-48"
         >
-          <option value="">All Actions</option>
-          <option value="USER_CREATED">User Created</option>
-          <option value="USER_SIGNED_IN">User Signed In</option>
-          <option value="PROSPECT_CREATED">Prospect Created</option>
-          <option value="PROSPECT_UPDATED">Prospect Updated</option>
-          <option value="PROSPECT_DELETED">Prospect Deleted</option>
-          <option value="RESEARCH_STARTED">Research Started</option>
-          <option value="OUTREACH_GENERATED">Outreach Generated</option>
-          <option value="MESSAGE_APPROVED">Message Approved</option>
-          <option value="MESSAGE_REJECTED">Message Rejected</option>
-          <option value="EMAIL_SENT">Email Sent</option>
-          <option value="GMAIL_CONNECTED">Gmail Connected</option>
-          <option value="GMAIL_DISCONNECTED">Gmail Disconnected</option>
-        </select>
-        <select
+          <option value="">All actions</option>
+          {ACTIONS.map((action) => (
+            <option key={action} value={action}>
+              {humanizeStatus(action)}
+            </option>
+          ))}
+        </Select>
+        <Select
           value={resourceFilter}
-          onChange={(e) => {
-            setResourceFilter(e.target.value);
+          onChange={(event) => {
+            setResourceFilter(event.target.value);
             setPage(1);
           }}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          aria-label="Filter by resource"
+          className="w-48"
         >
-          <option value="">All Resources</option>
-          <option value="USER">User</option>
-          <option value="PROSPECT">Prospect</option>
-          <option value="RESEARCH_REPORT">Research Report</option>
-          <option value="OUTREACH_PACKAGE">Outreach Package</option>
-          <option value="EMAIL_MESSAGE">Email Message</option>
-          <option value="CAMPAIGN">Campaign</option>
-        </select>
+          <option value="">All resources</option>
+          {RESOURCES.map((resource) => (
+            <option key={resource} value={resource}>
+              {humanizeStatus(resource)}
+            </option>
+          ))}
+        </Select>
+        {(actionFilter || resourceFilter) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setActionFilter("");
+              setResourceFilter("");
+              setPage(1);
+            }}
+          >
+            Clear
+          </Button>
+        )}
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Time
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Action
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Resource
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Details
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+      <TableWrap>
+        <Table>
+          <THead>
+            <TR className="hover:bg-transparent">
+              <TH className="w-44">Time</TH>
+              <TH>Action</TH>
+              <TH className="hidden md:table-cell">Resource</TH>
+              <TH className="hidden lg:table-cell">Details</TH>
+            </TR>
+          </THead>
+          <TBody>
             {loading ? (
-              <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500">
-                  Loading...
-                </td>
-              </tr>
+              <TableLoading colSpan={4} label="Loading audit log" />
             ) : logs.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500">
-                  No audit logs found.
-                </td>
-              </tr>
+              <TableEmpty colSpan={4}>
+                <EmptyState
+                  variant="compact"
+                  icon={<ScrollText />}
+                  title="No audit entries"
+                  description={
+                    actionFilter || resourceFilter
+                      ? "No entries match these filters. Clear them to see the full history."
+                      : "Actions will appear here as your team adds prospects, runs research, and reviews outreach."
+                  }
+                  className="border-0 bg-transparent"
+                  action={
+                    actionFilter || resourceFilter ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setActionFilter("");
+                          setResourceFilter("");
+                          setPage(1);
+                        }}
+                      >
+                        Clear filters
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              </TableEmpty>
             ) : (
               logs.map((log) => (
-                <tr key={log.id} className="hover:bg-gray-50">
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {new Date(log.created_at).toLocaleString()}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
-                      {log.action}
+                <TR key={log.id}>
+                  <TD>
+                    <span className="whitespace-nowrap text-[11px] tabular-nums text-muted">
+                      {formatDateTime(log.created_at)}
                     </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {log.resource_type}
-                    {log.resource_id && (
-                      <span className="ml-1 text-gray-400">
-                        ({log.resource_id.slice(0, 8)}...)
+                  </TD>
+                  <TD>
+                    <Badge variant={statusVariant(log.action)}>
+                      {humanizeStatus(log.action)}
+                    </Badge>
+                  </TD>
+                  <TD className="hidden md:table-cell">
+                    <span className="text-[12px] text-muted">
+                      {humanizeStatus(log.resource_type)}
+                    </span>
+                    {log.resource_id ? (
+                      <span className="ml-1.5 font-mono text-[10px] text-subtle">
+                        {log.resource_id.slice(0, 8)}
                       </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {log.details ? (
-                      <pre className="max-w-xs overflow-hidden text-xs">
-                        {JSON.stringify(log.details, null, 0)}
-                      </pre>
+                    ) : null}
+                  </TD>
+                  <TD className="hidden lg:table-cell">
+                    {log.details && Object.keys(log.details).length > 0 ? (
+                      <details className="group">
+                        <summary className="cursor-pointer list-none text-[11px] font-medium text-muted transition-colors hover:text-foreground">
+                          View
+                        </summary>
+                        <pre className="mt-1.5 max-w-md overflow-x-auto rounded-md border border-line bg-elevated px-2 py-1.5 font-mono text-[10px] leading-relaxed text-subtle">
+                          {JSON.stringify(log.details, null, 2)}
+                        </pre>
+                      </details>
                     ) : (
-                      "-"
+                      <span className="text-[12px] text-subtle">—</span>
                     )}
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ))
             )}
-          </tbody>
-        </table>
-      </div>
+          </TBody>
+        </Table>
+      </TableWrap>
 
-      <div className="mt-4 flex items-center justify-between">
-        <button
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <span className="text-sm text-gray-700">
-          Page {page} of {totalPages}
-        </span>
-        <button
-          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          disabled={page === totalPages}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

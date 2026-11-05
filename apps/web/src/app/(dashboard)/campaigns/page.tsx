@@ -1,6 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import * as React from "react";
+import { Megaphone, Plus } from "lucide-react";
+
+import { formatDate } from "@/lib/utils";
+import { humanizeStatus, statusVariant } from "@/lib/status";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { Modal } from "@/components/ui/modal";
+import { Field, Input, Textarea } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Campaign {
   id: string;
@@ -12,33 +23,50 @@ interface Campaign {
 }
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", productService: "" });
-  const [saving, setSaving] = useState(false);
+  const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [showCreate, setShowCreate] = React.useState(false);
+  const [form, setForm] = React.useState({ name: "", description: "", productService: "" });
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
-
-  async function fetchCampaigns() {
+  const fetchCampaigns = React.useCallback(async () => {
     try {
-      const res = await fetch("/api/campaigns");
+      const res = await fetch("/api/campaigns", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setCampaigns(data.campaigns ?? []);
       }
-    } catch (error) {
-      console.error("Failed to fetch campaigns:", error);
+    } catch (err) {
+      console.error("Failed to fetch campaigns:", err);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  React.useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
+
+  // The topbar CTA links here with ?new=1 so the form opens in one click.
+  React.useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("new") === "1") {
+      setShowCreate(true);
+    }
+  }, []);
+
+  function closeModal() {
+    setShowCreate(false);
+    setError(null);
+    if (window.location.search) {
+      window.history.replaceState({}, "", "/campaigns");
+    }
   }
 
-  async function createCampaign(e: React.FormEvent) {
-    e.preventDefault();
+  async function createCampaign(event: React.FormEvent) {
+    event.preventDefault();
     setSaving(true);
+    setError(null);
     try {
       const res = await fetch("/api/campaigns", {
         method: "POST",
@@ -49,122 +77,168 @@ export default function CampaignsPage() {
           productService: form.productService || undefined,
         }),
       });
-      if (res.ok) {
-        setShowCreate(false);
-        setForm({ name: "", description: "", productService: "" });
-        fetchCampaigns();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Could not create the campaign");
       }
-    } catch (error) {
-      console.error("Failed to create campaign:", error);
+      setForm({ name: "", description: "", productService: "" });
+      closeModal();
+      await fetchCampaigns();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create the campaign");
     } finally {
       setSaving(false);
     }
   }
 
+  const active = campaigns.filter((item) => item.status === "ACTIVE").length;
+  const completed = campaigns.filter((item) => item.status === "COMPLETED").length;
+
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          New Campaign
-        </button>
+    <div className="space-y-5">
+      <PageHeader
+        title="Campaigns"
+        description="Group prospects around a single product or motion, then track research, approval and replies per campaign."
+        actions={
+          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+            <Plus />
+            New campaign
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-3 gap-3 sm:max-w-md">
+        {[
+          { label: "Total", value: campaigns.length },
+          { label: "Active", value: active },
+          { label: "Completed", value: completed },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-lg border border-line bg-surface px-3 py-2"
+          >
+            <p className="text-[10px] uppercase tracking-[0.1em] text-subtle">{stat.label}</p>
+            <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
+              {stat.value}
+            </p>
+          </div>
+        ))}
       </div>
 
-      {showCreate && (
-        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow">
-          <h2 className="text-lg font-medium text-gray-900">Create Campaign</h2>
-          <form onSubmit={createCampaign} className="mt-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Name *</label>
-              <input
-                type="text"
-                required
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((index) => (
+            <div key={index} className="rounded-card border border-line bg-surface p-5">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="mt-3 h-3 w-full" />
+              <Skeleton className="mt-2 h-3 w-2/3" />
+              <Skeleton className="mt-5 h-5 w-20" />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Description</label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                rows={2}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Product/Service</label>
-              <input
-                type="text"
-                value={form.productService}
-                onChange={(e) => setForm((f) => ({ ...f, productService: e.target.value }))}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowCreate(false)}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {saving ? "Creating..." : "Create"}
-              </button>
-            </div>
-          </form>
+          ))}
+        </div>
+      ) : campaigns.length === 0 ? (
+        <EmptyState
+          icon={<Megaphone />}
+          title="No campaigns yet"
+          description="A campaign is the container for one offer and one audience. Create your first one to start measuring replies instead of sends."
+          action={
+            <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+              <Plus />
+              Create your first campaign
+            </Button>
+          }
+        />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {campaigns.map((campaign) => (
+            <article
+              key={campaign.id}
+              className="group flex flex-col rounded-card border border-line bg-surface p-5 shadow-card transition-colors hover:border-line-strong"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex size-9 items-center justify-center rounded-lg border border-line bg-elevated text-subtle">
+                  <Megaphone className="size-4" />
+                </div>
+                <Badge variant={statusVariant(campaign.status)} dot>
+                  {humanizeStatus(campaign.status)}
+                </Badge>
+              </div>
+
+              <h2 className="mt-3 text-sm font-semibold text-foreground">{campaign.name}</h2>
+              <p className="mt-1 line-clamp-2 min-h-[2.5rem] text-[12px] leading-relaxed text-muted">
+                {campaign.description || "No description yet."}
+              </p>
+
+              {campaign.product_service ? (
+                <span className="mt-3 inline-flex w-fit items-center rounded-md border border-line bg-elevated px-2 py-0.5 text-[11px] text-muted">
+                  {campaign.product_service}
+                </span>
+              ) : null}
+
+              <div className="mt-4 flex items-center justify-between border-t border-line pt-3 text-[11px] text-subtle">
+                <span>Created {formatDate(campaign.created_at)}</span>
+                <span className="tabular-nums">{campaign.id.slice(0, 8)}</span>
+              </div>
+            </article>
+          ))}
         </div>
       )}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {loading ? (
-          <div className="col-span-full rounded-lg border border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
-            Loading...
-          </div>
-        ) : campaigns.length === 0 ? (
-          <div className="col-span-full rounded-lg border border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
-            No campaigns yet. Create your first campaign to get started.
-          </div>
-        ) : (
-          campaigns.map((campaign) => (
-            <div
-              key={campaign.id}
-              className="rounded-lg border border-gray-200 bg-white p-6 shadow hover:shadow-md"
-            >
-              <h3 className="text-lg font-medium text-gray-900">{campaign.name}</h3>
-              {campaign.description && (
-                <p className="mt-1 text-sm text-gray-500">{campaign.description}</p>
-              )}
-              {campaign.product_service && (
-                <p className="mt-2 text-xs text-gray-400">Product: {campaign.product_service}</p>
-              )}
-              <div className="mt-4 flex items-center justify-between">
-                <span
-                  className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                    campaign.status === "ACTIVE"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {campaign.status}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {new Date(campaign.created_at).toLocaleDateString()}
-                </span>
-              </div>
+      <Modal
+        open={showCreate}
+        onClose={closeModal}
+        title="Create campaign"
+        description="Name the motion and, optionally, the product it sells."
+      >
+        <form onSubmit={createCampaign} className="space-y-4">
+          {error ? (
+            <div className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+              {error}
             </div>
-          ))
-        )}
-      </div>
+          ) : null}
+
+          <Field label="Campaign name" htmlFor="campaign-name" required>
+            <Input
+              id="campaign-name"
+              required
+              value={form.name}
+              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+              placeholder="Q4 — AI platform outreach"
+            />
+          </Field>
+
+          <Field label="Product / service" htmlFor="campaign-product" hint="Optional">
+            <Input
+              id="campaign-product"
+              value={form.productService}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, productService: event.target.value }))
+              }
+              placeholder="Data platform"
+            />
+          </Field>
+
+          <Field label="Description" htmlFor="campaign-description" hint="Optional">
+            <Textarea
+              id="campaign-description"
+              value={form.description}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, description: event.target.value }))
+              }
+              placeholder="Who this campaign targets and what the offer is."
+            />
+          </Field>
+
+          <div className="flex justify-end gap-2 border-t border-line pt-4">
+            <Button variant="ghost" onClick={closeModal}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" disabled={saving}>
+              {saving ? "Creating…" : "Create campaign"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

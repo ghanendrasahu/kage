@@ -1,33 +1,95 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { CalendarDays, Plus, Users } from "lucide-react";
+
+import { PageHeader } from "@/components/ui/page-header";
+import { buttonVariants } from "@/components/ui/button";
+import { KpiGrid } from "@/components/dashboard/kpi-grid";
+import { CampaignPerformance } from "@/components/dashboard/campaign-performance";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import type { Analytics, AuditLog, Campaign } from "@/components/dashboard/types";
+
+async function getJson<T>(url: string): Promise<T | null> {
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return null;
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 export default function DashboardPage() {
+  const [analytics, setAnalytics] = React.useState<Analytics | null>(null);
+  const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
+  const [logs, setLogs] = React.useState<AuditLog[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let active = true;
+
+    async function load() {
+      const [analyticsData, campaignsData, logsData] = await Promise.all([
+        getJson<Analytics>("/api/analytics"),
+        getJson<{ campaigns: Campaign[] }>("/api/campaigns"),
+        getJson<{ logs: AuditLog[] }>("/api/audit-logs?page=1&limit=8"),
+      ]);
+
+      if (!active) return;
+      setAnalytics(analyticsData);
+      setCampaigns(campaignsData?.campaigns ?? []);
+      setLogs(logsData?.logs ?? []);
+      setLoading(false);
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-      <p className="mt-2 text-gray-600">Welcome to KAGE - AI Cold Outreach Platform</p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Overview"
+        description="Where the pipeline stands right now — research coverage, message throughput, and what your team touched last."
+        actions={
+          <>
+            <span className="hidden items-center gap-1.5 rounded-lg border border-line bg-elevated px-2.5 py-1.5 text-xs text-muted sm:inline-flex">
+              <CalendarDays className="size-3.5 text-subtle" />
+              Last 7 days
+            </span>
+            <Link
+              href="/prospects"
+              className={buttonVariants({ variant: "secondary", size: "sm" })}
+            >
+              <Users />
+              Prospects
+            </Link>
+            <Link
+              href="/campaigns?new=1"
+              className={buttonVariants({ variant: "primary", size: "sm" })}
+            >
+              <Plus />
+              New campaign
+            </Link>
+          </>
+        }
+      />
 
-      <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Prospects Researched", value: "0", change: "+0%" },
-          { label: "Messages Generated", value: "0", change: "+0%" },
-          { label: "Messages Approved", value: "0", change: "+0%" },
-          { label: "Messages Sent", value: "0", change: "+0%" },
-        ].map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-            <p className="mt-2 text-3xl font-bold text-gray-900">{stat.value}</p>
-            <p className="mt-1 text-sm text-gray-500">{stat.change}</p>
-          </div>
-        ))}
-      </div>
+      <KpiGrid analytics={analytics} loading={loading} />
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900">Campaign Performance</h2>
-          <p className="mt-2 text-gray-500">No campaigns yet</p>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <CampaignPerformance
+            campaigns={campaigns}
+            loading={loading}
+            prospectsByStatus={analytics?.prospectsByStatus ?? {}}
+          />
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-          <p className="mt-2 text-gray-500">No recent activity</p>
-        </div>
+        <ActivityFeed logs={logs} loading={loading} />
       </div>
     </div>
   );

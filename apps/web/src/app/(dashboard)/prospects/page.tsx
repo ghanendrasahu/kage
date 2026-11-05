@@ -1,7 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import * as React from "react";
 import Link from "next/link";
+import { Filter, Trash2, UserPlus, Users } from "lucide-react";
+
+import { cn, formatDate, initials } from "@/lib/utils";
+import { humanizeStatus, statusVariant } from "@/lib/status";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { Select } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Table,
+  TableEmpty,
+  TableLoading,
+  TableWrap,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+} from "@/components/ui/table";
 
 interface Prospect {
   id: string;
@@ -16,187 +37,224 @@ interface Prospect {
   created_at: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  NEW: "bg-gray-100 text-gray-800",
-  RESEARCHING: "bg-blue-100 text-blue-800",
-  RESEARCHED: "bg-green-100 text-green-800",
-  DRAFTING: "bg-yellow-100 text-yellow-800",
-  REVIEWING: "bg-orange-100 text-orange-800",
-  APPROVED: "bg-green-100 text-green-800",
-  SENT: "bg-purple-100 text-purple-800",
-  REPLIED: "bg-indigo-100 text-indigo-800",
-};
+const STATUSES = [
+  "NEW",
+  "RESEARCHING",
+  "RESEARCHED",
+  "DRAFTING",
+  "REVIEWING",
+  "APPROVED",
+  "SENT",
+  "REPLIED",
+];
 
 export default function ProspectsPage() {
-  const [prospects, setProspects] = useState<Prospect[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [prospects, setProspects] = React.useState<Prospect[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [page, setPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
+  const [statusFilter, setStatusFilter] = React.useState("");
+  const [deleting, setDeleting] = React.useState<string | null>(null);
 
-  useEffect(() => {
-    fetchProspects();
-  }, [page, statusFilter]);
-
-  async function fetchProspects() {
+  const fetchProspects = React.useCallback(async () => {
+    setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: "20" });
       if (statusFilter) params.set("status", statusFilter);
-      const res = await fetch(`/api/prospects?${params}`);
+      const res = await fetch(`/api/prospects?${params}`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setProspects(data.prospects ?? []);
         setTotalPages(data.pagination?.totalPages ?? 1);
+      } else {
+        setProspects([]);
       }
     } catch (error) {
       console.error("Failed to fetch prospects:", error);
+      setProspects([]);
     } finally {
       setLoading(false);
     }
-  }
+  }, [page, statusFilter]);
+
+  React.useEffect(() => {
+    fetchProspects();
+  }, [fetchProspects]);
 
   async function deleteProspect(id: string) {
-    if (!confirm("Delete this prospect?")) return;
+    if (!confirm("Delete this prospect? This cannot be undone.")) return;
+    setDeleting(id);
     try {
       const res = await fetch(`/api/prospects/${id}`, { method: "DELETE" });
       if (res.ok) fetchProspects();
     } catch (error) {
       console.error("Failed to delete prospect:", error);
+    } finally {
+      setDeleting(null);
     }
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Prospects</h1>
-        <Link
-          href="/prospects/new"
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          Add Prospect
-        </Link>
+    <div className="space-y-5">
+      <PageHeader
+        title="Prospects"
+        description="Every person and account in your workspace, with the research and outreach state attached to them."
+        actions={
+          <Link href="/prospects/new" className={buttonVariants({ variant: "primary", size: "sm" })}>
+            <UserPlus />
+            Add prospect
+          </Link>
+        }
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-medium text-subtle">
+            <Filter className="mr-1 inline size-3.5 align-[-2px]" />
+            Status
+          </span>
+          <Select
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value);
+              setPage(1);
+            }}
+            aria-label="Filter prospects by status"
+            className="w-44"
+          >
+            <option value="">All statuses</option>
+            {STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {humanizeStatus(status)}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <p className="text-xs text-muted">
+          {loading ? "Loading…" : `${prospects.length} shown`}
+        </p>
       </div>
 
-      <div className="mt-4">
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1);
-          }}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-        >
-          <option value="">All Statuses</option>
-          <option value="NEW">New</option>
-          <option value="RESEARCHING">Researching</option>
-          <option value="RESEARCHED">Researched</option>
-          <option value="DRAFTING">Drafting</option>
-          <option value="REVIEWING">Reviewing</option>
-          <option value="APPROVED">Approved</option>
-          <option value="SENT">Sent</option>
-          <option value="REPLIED">Replied</option>
-        </select>
-      </div>
-
-      <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Company
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Contact
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Industry
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+      <TableWrap>
+        <Table>
+          <THead>
+            <TR className="hover:bg-transparent">
+              <TH>Company</TH>
+              <TH>Contact</TH>
+              <TH className="hidden md:table-cell">Industry</TH>
+              <TH>Status</TH>
+              <TH className="hidden lg:table-cell">Added</TH>
+              <TH className="text-right">Actions</TH>
+            </TR>
+          </THead>
+          <TBody>
             {loading ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
-                  Loading...
-                </td>
-              </tr>
+              <TableLoading colSpan={6} label="Loading prospects" />
             ) : prospects.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
-                  No prospects found. Add your first prospect to get started.
-                </td>
-              </tr>
+              <TableEmpty colSpan={6}>
+                <EmptyState
+                  variant="compact"
+                  icon={<Users />}
+                  title={statusFilter ? "No prospects in this state" : "No prospects yet"}
+                  description={
+                    statusFilter
+                      ? "Try a different status filter, or add a prospect to this stage."
+                      : "Add the people you want to reach. KAGE researches the account, drafts outreach, and routes it for approval."
+                  }
+                  className="border-0 bg-transparent"
+                  action={
+                    statusFilter ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setStatusFilter("");
+                          setPage(1);
+                        }}
+                      >
+                        Clear filter
+                      </Button>
+                    ) : (
+                      <Link
+                        href="/prospects/new"
+                        className={buttonVariants({ variant: "primary", size: "sm" })}
+                      >
+                        <UserPlus />
+                        Add your first prospect
+                      </Link>
+                    )
+                  }
+                />
+              </TableEmpty>
             ) : (
               prospects.map((prospect) => (
-                <tr key={prospect.id} className="hover:bg-gray-50">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{prospect.company_name}</div>
-                    {prospect.company_domain && (
-                      <div className="text-sm text-gray-500">{prospect.company_domain}</div>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{prospect.person_name}</div>
-                    {prospect.person_title && (
-                      <div className="text-sm text-gray-500">{prospect.person_title}</div>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {prospect.industry ?? "-"}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${STATUS_COLORS[prospect.status] ?? "bg-gray-100 text-gray-800"}`}
-                    >
-                      {prospect.status}
+                <TR key={prospect.id}>
+                  <TD>
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-elevated text-[11px] font-semibold text-muted">
+                        {initials(prospect.company_name)}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-medium text-foreground">
+                          {prospect.company_name}
+                        </p>
+                        <p className="truncate text-[11px] text-subtle">
+                          {prospect.company_domain ?? "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </TD>
+                  <TD>
+                    <p className="text-[13px] text-foreground">{prospect.person_name}</p>
+                    <p className="truncate text-[11px] text-subtle">
+                      {prospect.person_title ?? prospect.email ?? "—"}
+                    </p>
+                  </TD>
+                  <TD className="hidden md:table-cell">
+                    <span className="text-[12px] text-muted">{prospect.industry ?? "—"}</span>
+                  </TD>
+                  <TD>
+                    <Badge variant={statusVariant(prospect.status)} dot>
+                      {humanizeStatus(prospect.status)}
+                    </Badge>
+                  </TD>
+                  <TD className="hidden lg:table-cell">
+                    <span className="text-[12px] tabular-nums text-muted">
+                      {formatDate(prospect.created_at)}
                     </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm">
-                    <Link
-                      href={`/research?prospectId=${prospect.id}`}
-                      className="mr-3 text-indigo-600 hover:text-indigo-900"
-                    >
-                      Research
-                    </Link>
-                    <button
-                      onClick={() => deleteProspect(prospect.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
+                  </TD>
+                  <TD>
+                    <div className="flex items-center justify-end gap-1">
+                      <Link
+                        href={`/research?prospectId=${prospect.id}`}
+                        className="rounded-md px-2 py-1 text-[12px] font-medium text-muted transition-colors hover:bg-hover hover:text-foreground"
+                      >
+                        Research
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => deleteProspect(prospect.id)}
+                        disabled={deleting === prospect.id}
+                        aria-label={`Delete ${prospect.person_name}`}
+                        className={cn(
+                          "text-subtle hover:bg-danger/10 hover:text-danger",
+                          deleting === prospect.id && "opacity-50"
+                        )}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  </TD>
+                </TR>
               ))
             )}
-          </tbody>
-        </table>
-      </div>
+          </TBody>
+        </Table>
+      </TableWrap>
 
-      <div className="mt-4 flex items-center justify-between">
-        <button
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <span className="text-sm text-gray-700">
-          Page {page} of {totalPages}
-        </span>
-        <button
-          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          disabled={page === totalPages}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

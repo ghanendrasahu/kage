@@ -1,21 +1,156 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@source "../**/*.{ts,tsx}";
+
+/* ---------------------------------------------------------------------------
+   KAGE design tokens
+   A dark-first, low-noise palette in the spirit of Linear/Vercel: near-black
+   canvases, hairline borders, one violet accent, and status colours used
+   sparingly for meaning rather than decoration.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-background: #07080b;
+  --color-surface: #0b0d12;
+  --color-elevated: #101319;
+  --color-hover: #151922;
+  --color-line: #1c212b;
+  --color-line-strong: #2a3140;
+
+  --color-foreground: #eef1f6;
+  --color-muted: #98a2b3;
+  --color-subtle: #6b7585;
+
+  --color-brand: #8b7cff;
+  --color-brand-strong: #a99dff;
+  --color-brand-soft: #17142b;
+
+  --color-success: #34d399;
+  --color-success-soft: #0e2a21;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #2a2110;
+  --color-danger: #f87171;
+  --color-danger-soft: #2b1517;
+  --color-info: #60a5fa;
+  --color-info-soft: #101d2e;
+
+  --font-sans:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+    "Segoe UI", Inter, system-ui, sans-serif;
+  --font-mono:
+    ui-monospace, "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(255 255 255 / 0.02);
+  --shadow-pop: 0 24px 60px -18px rgb(0 0 0 / 0.85), 0 0 0 1px rgb(255 255 255 / 0.06);
+
+  --radius-card: 0.875rem;
+
+  --animate-fade-in: fade-in 220ms ease-out both;
+  --animate-rise: rise 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-shimmer: shimmer 1.8s linear infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-line);
+  }
+
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-brand) 35%, transparent);
+    color: var(--color-foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--color-brand) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  /* Thin, low-contrast scrollbars so long tables do not shout. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-line-strong);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #3a4354;
+  }
+}
+
+@utility kage-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 52px 52px;
+}
+
+@utility kage-glow {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% -10%,
+    rgb(139 124 255 / 0.18),
+    transparent 70%
+  );
+}
+
+@utility text-balance {
+  text-wrap: balance;
 }

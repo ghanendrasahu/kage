@@ -39,7 +39,7 @@ export const GET = withAuth(async (request, context) => {
     const total = Number(countResult[0]?.count ?? 0);
 
     return NextResponse.json({
-      auditLogs: items,
+      logs: items,
       pagination: {
         page,
         limit,

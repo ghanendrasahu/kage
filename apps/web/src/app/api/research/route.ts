@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { withAuth, handleApiError } from "@/lib/api";
-import { getDb, researchReports, researchSources, researchFindings, prospects } from "@kage/db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { getDb, researchReports, prospects } from "@kage/db";
+import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import { runResearchJob } from "@kage/workers/processors/research";
 
 const startResearchSchema = z.object({
@@ -20,12 +20,17 @@ export const GET = withAuth(async (request, context) => {
     const page = parseInt(searchParams.get("page") ?? "1");
     const limit = Math.min(parseInt(searchParams.get("limit") ?? "20"), 100);
     const prospectId = searchParams.get("prospectId");
+    const status = searchParams.get("status");
 
     const db = getDb();
     const conditions = [eq(researchReports.organization_id, context.organizationId)];
 
     if (prospectId) {
       conditions.push(eq(researchReports.prospect_id, prospectId));
+    }
+
+    if (status) {
+      conditions.push(eq(researchReports.status, status));
     }
 
     const [items, countResult] = await Promise.all([
@@ -44,8 +49,36 @@ export const GET = withAuth(async (request, context) => {
 
     const total = Number(countResult[0]?.count ?? 0);
 
+    // Hydrate the account behind each report so the table can show a name
+    // without an N+1 query per row.
+    const prospectIds = [
+      ...new Set(items.map((item) => item.prospect_id).filter(Boolean)),
+    ] as string[];
+
+    const prospectRows = prospectIds.length
+      ? await db
+          .select({
+            id: prospects.id,
+            company_name: prospects.company_name,
+            person_name: prospects.person_name,
+          })
+          .from(prospects)
+          .where(inArray(prospects.id, prospectIds))
+      : [];
+
+    const prospectById = new Map(prospectRows.map((row) => [row.id, row]));
+
+    const reports = items.map((item) => {
+      const prospect = item.prospect_id ? prospectById.get(item.prospect_id) : undefined;
+      return {
+        ...item,
+        company_name: prospect?.company_name ?? "Unknown company",
+        person_name: prospect?.person_name ?? null,
+      };
+    });
+
     return NextResponse.json({
-      reports: items,
+      reports,
       pagination: {
         page,
         limit,
