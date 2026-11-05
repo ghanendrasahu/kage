@@ -71,6 +71,24 @@ function resourceLabel(resourceType: string): string {
   );
 }
 
+/**
+ * Prefer human identifiers captured in `details` over a raw UUID. Falls back to
+ * a short id so old entries (written before details were recorded) stay useful.
+ */
+function logSummary(log: AuditLog): string {
+  const details = log.details ?? {};
+  const person = typeof details["person_name"] === "string" ? details["person_name"] : null;
+  const company = typeof details["company_name"] === "string" ? details["company_name"] : null;
+  const subject = typeof details["subject"] === "string" ? details["subject"] : null;
+
+  if (person && company) return `${person} · ${company}`;
+  if (person) return person;
+  if (subject) return subject;
+  if (company) return company;
+  if (log.resource_id) return `ID ${log.resource_id.slice(0, 8)}`;
+  return "Workspace";
+}
+
 const QUICK_LINKS = [
   { href: "/prospects/new", label: "Add a prospect", icon: UserPlus },
   { href: "/research", label: "Run account research", icon: Search },
@@ -180,7 +198,7 @@ export function ActivityFeed({
                       {label} {meta.verb}
                     </p>
                     <p className="truncate text-[11px] text-subtle">
-                      {log.resource_id ? `ID ${log.resource_id.slice(0, 8)}` : "Workspace"}
+                      {logSummary(log)}
                     </p>
                   </div>
                   <time className="shrink-0 pt-1 text-[10px] tabular-nums text-subtle">

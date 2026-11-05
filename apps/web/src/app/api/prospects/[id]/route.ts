@@ -123,6 +123,8 @@ export async function PATCH(
         .returning();
 
       await recordAudit(context, AuditAction.UPDATE, "PROSPECT", id, {
+        person_name: updated?.person_name ?? existing.person_name,
+        company_name: updated?.company_name ?? existing.company_name,
         fields: Object.keys(updateData).filter((key) => key !== "updated_at"),
       });
 
