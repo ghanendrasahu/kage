@@ -199,9 +199,12 @@ export default function ProspectsPage() {
                         {initials(prospect.company_name)}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate text-[13px] font-medium text-foreground">
+                        <Link
+                          href={`/prospects/${prospect.id}`}
+                          className="block truncate text-[13px] font-medium text-foreground transition-colors hover:text-brand"
+                        >
                           {prospect.company_name}
-                        </p>
+                        </Link>
                         <p className="truncate text-[11px] text-subtle">
                           {prospect.company_domain ?? "—"}
                         </p>
@@ -209,7 +212,12 @@ export default function ProspectsPage() {
                     </div>
                   </TD>
                   <TD>
-                    <p className="text-[13px] text-foreground">{prospect.person_name}</p>
+                    <Link
+                      href={`/prospects/${prospect.id}`}
+                      className="block text-[13px] text-foreground transition-colors hover:text-brand"
+                    >
+                      {prospect.person_name}
+                    </Link>
                     <p className="truncate text-[11px] text-subtle">
                       {prospect.person_title ?? prospect.email ?? "—"}
                     </p>
@@ -229,6 +237,12 @@ export default function ProspectsPage() {
                   </TD>
                   <TD>
                     <div className="flex items-center justify-end gap-1">
+                      <Link
+                        href={`/prospects/${prospect.id}`}
+                        className="rounded-md px-2 py-1 text-[12px] font-medium text-muted transition-colors hover:bg-hover hover:text-foreground"
+                      >
+                        Open
+                      </Link>
                       <Link
                         href={`/research?prospectId=${prospect.id}`}
                         className="rounded-md px-2 py-1 text-[12px] font-medium text-muted transition-colors hover:bg-hover hover:text-foreground"
