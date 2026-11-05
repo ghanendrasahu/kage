@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="kage" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9a8cff"/>
+      <stop offset="0.55" stop-color="#6d5ae6"/>
+      <stop offset="1" stop-color="#4b3bb3"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="9" fill="url(#kage)"/>
+  <path
+    d="M10 8.5v15M10 16.6l7.4-8.3M12.8 13.9l7.8 9.6"
+    fill="none"
+    stroke="#0b0716"
+    stroke-width="2.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
