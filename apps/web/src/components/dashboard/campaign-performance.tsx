@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Plus } from "lucide-react";
 
 import { cn, formatDate } from "@/lib/utils";
-import { statusVariant } from "@/lib/status";
+import { humanizeStatus, statusVariant } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -184,7 +184,10 @@ export function CampaignPerformance({
             <ul className="space-y-2">
               {filtered.map((campaign) => (
                 <li key={campaign.id}>
-                  <div className="group flex items-center gap-3 rounded-lg border border-line bg-elevated/40 p-3 transition-colors hover:border-line-strong hover:bg-hover/60">
+                  <Link
+                    href={`/campaigns/${campaign.id}`}
+                    className="group flex items-center gap-3 rounded-lg border border-line bg-elevated/40 p-3 transition-colors hover:border-line-strong hover:bg-hover/60"
+                  >
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-subtle">
                       <svg viewBox="0 0 24 24" className="size-4" fill="none" aria-hidden>
                         <path
@@ -209,10 +212,10 @@ export function CampaignPerformance({
                       <p className="text-[11px] text-muted">{formatDate(campaign.created_at)}</p>
                     </div>
                     <Badge variant={statusVariant(campaign.status)} dot>
-                      {campaign.status}
+                      {humanizeStatus(campaign.status)}
                     </Badge>
                     <ArrowRight className="size-3.5 shrink-0 text-transparent transition-colors group-hover:text-muted" />
-                  </div>
+                  </Link>
                 </li>
               ))}
             </ul>

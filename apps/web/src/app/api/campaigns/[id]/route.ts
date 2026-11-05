@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth, handleApiError } from "@/lib/api";
 import { getDb, campaigns, campaignProspects, prospects } from "@kage/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { CampaignStatus } from "@kage/shared";
 
 const updateCampaignSchema = z.object({
@@ -25,7 +25,7 @@ async function loadCampaign(id: string, organizationId: string) {
     where: and(
       eq(campaigns.id, id),
       eq(campaigns.organization_id, organizationId),
-      eq(campaigns.deleted_at, null as any)
+      isNull(campaigns.deleted_at)
     ),
   });
 
@@ -161,7 +161,7 @@ export async function POST(
         where: and(
           eq(campaigns.id, id),
           eq(campaigns.organization_id, context.organizationId),
-          eq(campaigns.deleted_at, null as any)
+          isNull(campaigns.deleted_at)
         ),
       });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Megaphone, Plus } from "lucide-react";
 
 import { formatDate } from "@/lib/utils";
@@ -151,12 +152,13 @@ export default function CampaignsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {campaigns.map((campaign) => (
-            <article
+            <Link
               key={campaign.id}
-              className="group flex flex-col rounded-card border border-line bg-surface p-5 shadow-card transition-colors hover:border-line-strong"
+              href={`/campaigns/${campaign.id}`}
+              className="group flex flex-col rounded-card border border-line bg-surface p-5 shadow-card transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex size-9 items-center justify-center rounded-lg border border-line bg-elevated text-subtle">
+                <div className="flex size-9 items-center justify-center rounded-lg border border-line bg-elevated text-subtle transition-colors group-hover:text-brand">
                   <Megaphone className="size-4" />
                 </div>
                 <Badge variant={statusVariant(campaign.status)} dot>
@@ -177,9 +179,12 @@ export default function CampaignsPage() {
 
               <div className="mt-4 flex items-center justify-between border-t border-line pt-3 text-[11px] text-subtle">
                 <span>Created {formatDate(campaign.created_at)}</span>
-                <span className="tabular-nums">{campaign.id.slice(0, 8)}</span>
+                <span className="inline-flex items-center gap-1 tabular-nums transition-colors group-hover:text-foreground">
+                  {campaign.id.slice(0, 8)}
+                  <span aria-hidden>→</span>
+                </span>
               </div>
-            </article>
+            </Link>
           ))}
         </div>
       )}

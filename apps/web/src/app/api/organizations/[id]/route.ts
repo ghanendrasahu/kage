@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth, handleApiError } from "@/lib/api";
 import { getDb, organizations, organizationMembers } from "@kage/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 
 const updateOrganizationSchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -23,7 +23,7 @@ export async function GET(
       const org = await db.query.organizations.findFirst({
         where: and(
           eq(organizations.id, id),
-          eq(organizations.deleted_at, null as any)
+          isNull(organizations.deleted_at)
         ),
       });
 

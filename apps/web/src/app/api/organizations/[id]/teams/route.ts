@@ -20,8 +20,8 @@ export async function GET(
 
       const membership = await db.query.organizationMembers.findFirst({
         where: and(
-          eq(teamMembers as any, id),
-          eq(teamMembers.user_id, context.userId)
+          eq(organizationMembers.organization_id, id),
+          eq(organizationMembers.user_id, context.userId)
         ),
       });
 
