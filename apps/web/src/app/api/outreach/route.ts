@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
-import { withAuth, handleApiError } from "@/lib/api";
+import { withAuth, handleApiError, recordAudit } from "@/lib/api";
 import { getDb, outreachPackages, outreachMessages, prospects, researchReports } from "@kage/db";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
-import { OutreachChannel, MessageStatus } from "@kage/shared";
+import { OutreachChannel, MessageStatus, AuditAction } from "@kage/shared";
 import { runOutreachJob } from "@kage/workers/processors/outreach";
 
 const generateOutreachSchema = z.object({
@@ -149,6 +149,17 @@ export const POST = withAuth(async (request, context) => {
       .returning();
 
     if (outreachPackage) {
+      await recordAudit(
+        context,
+        AuditAction.CREATE,
+        "OUTREACH_PACKAGE",
+        outreachPackage.id,
+        {
+          prospect_id: parsed.data.prospectId,
+          company_name: existingProspect.company_name,
+        }
+      );
+
       // No paid worker on the free tier: run after the response is sent.
       after(async () => {
         try {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth, handleApiError } from "@/lib/api";
+import { withAuth, handleApiError, recordAudit } from "@/lib/api";
 import { getDb, outreachMessages } from "@kage/db";
 import { eq, and } from "drizzle-orm";
-import { MessageStatus, MESSAGE_TRANSITIONS } from "@kage/shared";
+import { MessageStatus, MESSAGE_TRANSITIONS, AuditAction } from "@kage/shared";
 
 export async function POST(
   request: NextRequest,
@@ -50,6 +50,11 @@ export async function POST(
           )
         )
         .returning();
+
+      await recordAudit(context, AuditAction.REJECT, "EMAIL_MESSAGE", id, {
+        channel: existing.channel,
+        subject: existing.subject,
+      });
 
       return NextResponse.json({ message: updated });
     } catch (error) {

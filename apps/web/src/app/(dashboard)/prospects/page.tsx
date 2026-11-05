@@ -41,11 +41,14 @@ const STATUSES = [
   "NEW",
   "RESEARCHING",
   "RESEARCHED",
-  "DRAFTING",
-  "REVIEWING",
+  "DRAFTED",
+  "REVIEW",
   "APPROVED",
   "SENT",
   "REPLIED",
+  "MEETING",
+  "CLOSED",
+  "DISQUALIFIED",
 ];
 
 export default function ProspectsPage() {

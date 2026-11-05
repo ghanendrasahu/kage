@@ -18,8 +18,8 @@ export const GET = withAuth(async (_request, context) => {
         industry: sql<string | null>`max(${prospects.industry})`,
         company_size: sql<string | null>`max(${prospects.company_size})`,
         contacts: sql<number>`count(*)::int`,
-        researched: sql<number>`count(*) filter (where ${prospects.status} in ('RESEARCHED', 'DRAFTING', 'REVIEWING', 'APPROVED', 'SENT', 'REPLIED'))::int`,
-        in_pipeline: sql<number>`count(*) filter (where ${prospects.status} in ('RESEARCHING', 'RESEARCHED', 'DRAFTING', 'REVIEWING'))::int`,
+        researched: sql<number>`count(*) filter (where ${prospects.status} in ('RESEARCHED', 'DRAFTED', 'REVIEW', 'APPROVED', 'SENT', 'REPLIED', 'MEETING'))::int`,
+        in_pipeline: sql<number>`count(*) filter (where ${prospects.status} in ('RESEARCHING', 'RESEARCHED', 'DRAFTED', 'REVIEW'))::int`,
         last_added: sql<string>`max(${prospects.created_at})`,
       })
       .from(prospects)

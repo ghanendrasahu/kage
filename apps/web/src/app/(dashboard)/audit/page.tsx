@@ -32,28 +32,29 @@ interface AuditLog {
   created_at: string;
 }
 
+// Must mirror the AuditAction enum. Unknown values are rejected by Postgres.
 const ACTIONS = [
-  "USER_CREATED",
-  "USER_SIGNED_IN",
-  "PROSPECT_CREATED",
-  "PROSPECT_UPDATED",
-  "PROSPECT_DELETED",
-  "RESEARCH_STARTED",
-  "OUTREACH_GENERATED",
-  "MESSAGE_APPROVED",
-  "MESSAGE_REJECTED",
-  "EMAIL_SENT",
-  "GMAIL_CONNECTED",
-  "GMAIL_DISCONNECTED",
+  "CREATE",
+  "READ",
+  "UPDATE",
+  "DELETE",
+  "APPROVE",
+  "REJECT",
+  "SEND",
+  "LOGIN",
+  "LOGOUT",
+  "CONNECT",
+  "DISCONNECT",
 ];
 
 const RESOURCES = [
-  "USER",
   "PROSPECT",
   "RESEARCH_REPORT",
   "OUTREACH_PACKAGE",
   "EMAIL_MESSAGE",
   "CAMPAIGN",
+  "USER",
+  "INTEGRATION",
 ];
 
 export default function AuditPage() {

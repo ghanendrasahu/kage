@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { withAuth, handleApiError } from "@/lib/api";
+import { withAuth, handleApiError, recordAudit } from "@/lib/api";
 import { getDb, prospects } from "@kage/db";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { ProspectStatus } from "@kage/shared";
+import { ProspectStatus, AuditAction } from "@kage/shared";
 
 const createProspectSchema = z.object({
   companyName: z.string().min(1).max(255),
@@ -99,6 +99,11 @@ export const POST = withAuth(async (request, context) => {
         status: ProspectStatus.NEW,
       })
       .returning();
+
+    await recordAudit(context, AuditAction.CREATE, "PROSPECT", prospect?.id, {
+      company_name: prospect?.company_name,
+      person_name: prospect?.person_name,
+    });
 
     return NextResponse.json({ prospect }, { status: 201 });
   } catch (error) {

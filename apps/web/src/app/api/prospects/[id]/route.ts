@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { withAuth, handleApiError } from "@/lib/api";
+import { withAuth, handleApiError, recordAudit } from "@/lib/api";
 import { getDb, prospects } from "@kage/db";
 import { eq, and } from "drizzle-orm";
-import { ProspectStatus, PROSPECT_TRANSITIONS } from "@kage/shared";
+import { ProspectStatus, PROSPECT_TRANSITIONS, AuditAction } from "@kage/shared";
 
 const updateProspectSchema = z.object({
   companyName: z.string().min(1).max(255).optional(),
@@ -122,6 +122,10 @@ export async function PATCH(
         )
         .returning();
 
+      await recordAudit(context, AuditAction.UPDATE, "PROSPECT", id, {
+        fields: Object.keys(updateData).filter((key) => key !== "updated_at"),
+      });
+
       return NextResponse.json({ prospect: updated });
     } catch (error) {
       return handleApiError(error);
@@ -162,6 +166,11 @@ export async function DELETE(
             eq(prospects.organization_id, context.organizationId)
           )
         );
+
+      await recordAudit(context, AuditAction.DELETE, "PROSPECT", id, {
+        company_name: existing.company_name,
+        person_name: existing.person_name,
+      });
 
       return NextResponse.json({ success: true });
     } catch (error) {

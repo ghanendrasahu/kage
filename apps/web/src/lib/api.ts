@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@kage/auth";
+import { createAuditLog } from "@kage/db";
+import { AuditAction } from "@kage/shared";
 import { z } from "zod";
 
 export type ApiContext = {
@@ -91,4 +93,29 @@ export function handleApiError(error: unknown): NextResponse {
   }
 
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+}
+
+/**
+ * Audit writes must never take down the action they describe. A failed log is
+ * noisy but harmless, so it is reported and swallowed.
+ */
+export async function recordAudit(
+  context: ApiContext,
+  action: AuditAction,
+  resourceType: string,
+  resourceId?: string,
+  details?: Record<string, unknown>
+): Promise<void> {
+  try {
+    await createAuditLog(
+      context.organizationId,
+      context.userId,
+      action,
+      resourceType,
+      resourceId,
+      details
+    );
+  } catch (error) {
+    console.error("Failed to write audit log:", error);
+  }
 }

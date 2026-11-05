@@ -15,11 +15,11 @@ import {
   Sparkles,
   Trash2,
   UserPlus,
+  Users,
   X,
 } from "lucide-react";
 
 import { cn, timeAgo } from "@/lib/utils";
-import { humanizeStatus } from "@/lib/status";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,21 +27,49 @@ import type { AuditLog } from "@/components/dashboard/types";
 
 const ACTION_META: Record<
   string,
-  { icon: React.ComponentType<{ className?: string }>; tone: string }
+  { icon: React.ComponentType<{ className?: string }>; tone: string; verb: string }
 > = {
-  PROSPECT_CREATED: { icon: UserPlus, tone: "text-brand border-brand/25 bg-brand-soft" },
-  PROSPECT_UPDATED: { icon: FileText, tone: "text-info border-info/25 bg-info-soft" },
-  PROSPECT_DELETED: { icon: Trash2, tone: "text-danger border-danger/25 bg-danger-soft" },
-  RESEARCH_STARTED: { icon: Search, tone: "text-info border-info/25 bg-info-soft" },
-  OUTREACH_GENERATED: { icon: Sparkles, tone: "text-brand border-brand/25 bg-brand-soft" },
-  MESSAGE_APPROVED: { icon: Check, tone: "text-success border-success/25 bg-success-soft" },
-  MESSAGE_REJECTED: { icon: X, tone: "text-danger border-danger/25 bg-danger-soft" },
-  EMAIL_SENT: { icon: Send, tone: "text-success border-success/25 bg-success-soft" },
-  GMAIL_CONNECTED: { icon: Plug, tone: "text-success border-success/25 bg-success-soft" },
-  GMAIL_DISCONNECTED: { icon: Plug, tone: "text-danger border-danger/25 bg-danger-soft" },
-  USER_CREATED: { icon: UserPlus, tone: "text-info border-info/25 bg-info-soft" },
-  USER_SIGNED_IN: { icon: LogIn, tone: "text-muted border-line-strong bg-elevated" },
+  CREATE: { icon: Plus, tone: "text-brand border-brand/25 bg-brand-soft", verb: "created" },
+  READ: { icon: Search, tone: "text-info border-info/25 bg-info-soft", verb: "viewed" },
+  UPDATE: { icon: FileText, tone: "text-info border-info/25 bg-info-soft", verb: "updated" },
+  DELETE: { icon: Trash2, tone: "text-danger border-danger/25 bg-danger-soft", verb: "deleted" },
+  APPROVE: { icon: Check, tone: "text-success border-success/25 bg-success-soft", verb: "approved" },
+  REJECT: { icon: X, tone: "text-danger border-danger/25 bg-danger-soft", verb: "rejected" },
+  SEND: { icon: Send, tone: "text-success border-success/25 bg-success-soft", verb: "sent" },
+  LOGIN: { icon: LogIn, tone: "text-muted border-line-strong bg-elevated", verb: "signed in" },
+  LOGOUT: { icon: LogIn, tone: "text-muted border-line-strong bg-elevated", verb: "signed out" },
+  CONNECT: { icon: Plug, tone: "text-success border-success/25 bg-success-soft", verb: "connected" },
+  DISCONNECT: { icon: Plug, tone: "text-danger border-danger/25 bg-danger-soft", verb: "disconnected" },
+  // Legacy action names kept so an older deployment still renders sensibly.
+  PROSPECT_CREATED: { icon: UserPlus, tone: "text-brand border-brand/25 bg-brand-soft", verb: "created" },
+  RESEARCH_STARTED: { icon: Search, tone: "text-info border-info/25 bg-info-soft", verb: "researched" },
+  OUTREACH_GENERATED: { icon: Sparkles, tone: "text-brand border-brand/25 bg-brand-soft", verb: "drafted" },
+  MESSAGE_APPROVED: { icon: Check, tone: "text-success border-success/25 bg-success-soft", verb: "approved" },
+  MESSAGE_REJECTED: { icon: X, tone: "text-danger border-danger/25 bg-danger-soft", verb: "rejected" },
+  EMAIL_SENT: { icon: Send, tone: "text-success border-success/25 bg-success-soft", verb: "sent" },
 };
+
+const RESOURCE_LABEL: Record<string, string> = {
+  PROSPECT: "Prospect",
+  RESEARCH_REPORT: "Research report",
+  OUTREACH_PACKAGE: "Outreach package",
+  EMAIL_MESSAGE: "Message",
+  CAMPAIGN: "Campaign",
+  USER: "User",
+  INTEGRATION: "Integration",
+  GMAIL: "Gmail",
+};
+
+function resourceLabel(resourceType: string): string {
+  return (
+    RESOURCE_LABEL[resourceType] ??
+    resourceType
+      .toLowerCase()
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
+  );
+}
 
 const QUICK_LINKS = [
   { href: "/prospects/new", label: "Add a prospect", icon: UserPlus },
@@ -91,11 +119,11 @@ export function ActivityFeed({
               description="Actions across prospects, research and outreach will stream here as your team works."
               action={
                 <Link
-                  href="/prospects/new"
+                  href="/prospects"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-elevated px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-line-strong hover:bg-hover"
                 >
-                  <Plus className="size-3.5" />
-                  Add your first prospect
+                  <Users className="size-3.5" />
+                  View prospects
                 </Link>
               }
             />
@@ -132,8 +160,10 @@ export function ActivityFeed({
               const meta = ACTION_META[log.action] ?? {
                 icon: Activity,
                 tone: "text-muted border-line-strong bg-elevated",
+                verb: "changed",
               };
               const Icon = meta.icon;
+              const label = resourceLabel(log.resource_type);
 
               return (
                 <li key={log.id} className="relative flex gap-3 pb-4 last:pb-0">
@@ -147,11 +177,10 @@ export function ActivityFeed({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[12px] font-medium leading-5 text-foreground">
-                      {humanizeStatus(log.action)}
+                      {label} {meta.verb}
                     </p>
                     <p className="truncate text-[11px] text-subtle">
-                      {log.resource_type.toLowerCase().replace(/_/g, " ")}
-                      {log.resource_id ? ` · ${log.resource_id.slice(0, 8)}` : ""}
+                      {log.resource_id ? `ID ${log.resource_id.slice(0, 8)}` : "Workspace"}
                     </p>
                   </div>
                   <time className="shrink-0 pt-1 text-[10px] tabular-nums text-subtle">

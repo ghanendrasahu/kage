@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
-import { withAuth, handleApiError } from "@/lib/api";
+import { withAuth, handleApiError, recordAudit } from "@/lib/api";
 import { getDb, researchReports, prospects } from "@kage/db";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { AuditAction } from "@kage/shared";
 import { runResearchJob } from "@kage/workers/processors/research";
 
 const startResearchSchema = z.object({
@@ -130,6 +131,11 @@ export const POST = withAuth(async (request, context) => {
       .returning();
 
     if (report) {
+      await recordAudit(context, AuditAction.CREATE, "RESEARCH_REPORT", report.id, {
+        company_name: parsed.data.companyName,
+        prospect_id: parsed.data.prospectId,
+      });
+
       // No paid worker on the free tier: run after the response is sent.
       after(async () => {
         try {
