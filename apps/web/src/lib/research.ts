@@ -60,13 +60,7 @@ export function parseResearchSummary(
       ),
     };
 
-    const hasContent =
-      summary.signals.length > 0 ||
-      summary.painPoints.length > 0 ||
-      summary.opportunities.length > 0 ||
-      summary.personalizationAngles.length > 0;
-
-    return hasContent ? summary : null;
+    return summary;
   } catch {
     return null;
   }
@@ -98,5 +92,7 @@ export function summarizeResearch(raw: string | null | undefined): string | null
       : null,
   ].filter((item): item is string => item !== null);
 
-  return lead ? [lead, ...counts].join(" · ") : counts.join(" · ") || null;
+  if (!lead && counts.length === 0) return "No structured findings yet";
+
+  return lead ? [lead, ...counts].join(" · ") : counts.join(" · ");
 }

@@ -489,11 +489,19 @@ const SUMMARY_GROUPS = [
 
 function ResearchSummaryBody({ raw }: { raw: string | null }) {
   const parsed = React.useMemo(() => parseResearchSummary(raw), [raw]);
+  const hasContent =
+    parsed !== null &&
+    (parsed.signals.length > 0 ||
+      parsed.painPoints.length > 0 ||
+      parsed.opportunities.length > 0 ||
+      parsed.personalizationAngles.length > 0);
 
-  if (!parsed) {
+  if (!parsed || !hasContent) {
     return (
       <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-muted">
-        {raw ?? "No summary was produced for this report."}
+        {parsed
+          ? "This report has no structured findings."
+          : raw ?? "No summary was produced for this report."}
       </p>
     );
   }
